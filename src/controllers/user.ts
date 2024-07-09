@@ -1,20 +1,63 @@
 import { Request, Response } from "express";
-import User from "../models/User";
 import bcrypt from "bcryptjs";
+import User, { IUser } from "../models/User";
 
-export const register = async (req: Request, res: Response): Promise<void> => {
-  const { username, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
+export const register = async (
+  req: Request,
+  res: Response
+): Promise<void | any> => {
+  try {
+    const { username, email, password } = req.body;
 
-  const user = new User({ username, password: hashedPassword });
-  await user.save();
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
 
-  res.status(201).json({ message: "User created" });
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const newUser: IUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    const currentUser = await newUser.save();
+    res
+      .status(201)
+      .json({ message: "User created", username: currentUser.username });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.session;
+    const updateData = req.body;
+
+    if (updateData.password) {
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(updateData.password, saltRounds);
+    }
+
+    const user = await User.findOneAndUpdate({ userId }, updateData, {
+      new: true,
+    }).populate("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ username }).select("+password");
   if (!user) {
     res.status(400).json({ message: "Invalid credentials" });
     return;
@@ -26,8 +69,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  req.session.userId = user._id;
-  res.json({ message: "Logged in", userId: user._id });
+  req.session.userId = user.userId;
+  res.json({ message: "Logged in", userId: user.userId });
 };
 
 export const logout = (req: Request, res: Response): void => {
