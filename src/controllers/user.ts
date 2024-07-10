@@ -84,6 +84,11 @@ export const logout = (req: Request, res: Response): void => {
   });
 };
 
-export const dashboard = (req: Request, res: Response): void => {
-  res.send(`Hello user ${req.session.userId}`);
+export const dashboard = async (req: Request, res: Response): Promise<void> => {
+  const { userId } = req.session;
+  const user = await User.findOne({userId});
+  if(!user) {
+    req.session.destroy(() => {});
+  }
+  res.send(`Hello ${user?.username}`);
 };
