@@ -3,13 +3,14 @@ import mongoose from "mongoose";
 import cors from "cors";
 import session from "express-session";
 import userRoutes from "./routes/user";
+import postRoutes from "./routes/post";
+
 import { CLIENT_URL, MONGOOSE_URL, PORT } from "./constants/constants";
 import { redisStore } from "./config/redis";
 
 require("dotenv").config();
 
 const app = express();
-
 
 mongoose.connect(MONGOOSE_URL, {
   useNewUrlParser: true,
@@ -40,4 +41,5 @@ app.use(
 );
 
 app.use("/api/users", userRoutes);
+app.use("/api/posts", postRoutes);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
