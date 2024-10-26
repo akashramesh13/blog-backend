@@ -5,7 +5,12 @@ import session from "express-session";
 import userRoutes from "./routes/user";
 import postRoutes from "./routes/post";
 
-import { CLIENT_URL, MONGOOSE_URL, PORT } from "./constants/constants";
+import {
+  CLIENT_URL,
+  MONGOOSE_URL,
+  PORT,
+  SESSION_SECRET,
+} from "./constants/constants";
 import { redisStore } from "./config/redis";
 
 require("dotenv").config();
@@ -19,7 +24,7 @@ mongoose.connect(MONGOOSE_URL, {
 
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: "*",
     credentials: true,
   })
 );
@@ -28,7 +33,7 @@ app.use(express.json());
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET!,
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: redisStore,
